@@ -213,12 +213,16 @@ function setupDrag() {
             applyUpdate();
             carouselTrack.classList.remove('is-dragged');
         }
+
+        document.body.style.removeProperty('overflow', 'hidden');
     }
 
     function ondrag(ev) {
         ev.preventDefault();
 
         if (isLocked) return;
+
+        document.body.style.setProperty('overflow', 'hidden');
 
         let dist = (ev.clientY - carouselTrack.clientTop) - startY;
         direction = dist < 0 ? 1 : -1;
