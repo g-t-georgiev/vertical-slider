@@ -142,7 +142,7 @@ body {
 }
 
 .carousel__item.in-transition {
-    transition: all .55s ease;
+    transition: all .22s;
 }
 
 .carousel__item img {
