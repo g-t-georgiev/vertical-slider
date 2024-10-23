@@ -1,29 +1,3 @@
-export function interpolate(startValue, endValue, t) {
-    return startValue + (endValue - startValue) * t;
-}
-
-export const Easing = {
-
-    easeInQuad(t) {
-        return t ** 2;
-    },
-    easeOutQuad(t) {
-        return t * (2 - t);
-    },
-    easeInOutQuad(t) {
-        return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-    },
-    easeInCubic(t) {
-        return t ** 3;
-    },
-    easeOutCubic(t) {
-        return (--t) * t * t + 1;
-    },
-    easeInOutCubic(t) {
-        return t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1;
-    },
-}
-
 export function debounce(fn, interval = 500, thisArg) {
     let timeout;
 
@@ -73,7 +47,6 @@ export function rotateArrayItems(array, direction = 1) {
     return array;
 }
 
-
 export function getElementStyles(element) {
     let transform = element.style.transform;
 
@@ -91,22 +64,4 @@ export function getElementStyles(element) {
         translateY,
         opacity
     };
-}
-
-export function awaitTransitions(element, ...props) {
-    let updatedPropsCount = 0;
-
-    return new Promise((r, e) => {
-
-        element.addEventListener('transitionend', function handler(ev) {
-            if (props.some(p => p === ev.propertyName)) {
-                updatedPropsCount++;
-            }
-
-            if (updatedPropsCount === props.length) {
-                element.removeEventListener('transitionend', handler);
-                r(element);
-            }
-        });
-    });
 }

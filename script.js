@@ -1,293 +1,244 @@
-import {
-    debounce,
-    getElementStyles,
-    rotateArrayItems,
-    awaitTransitions,
-    Easing, interpolate,
-} from './utils.js';
+// import { getElementStyles } from './utils.js';
 
 const carousel = document.querySelector('[data-carousel]');
 const carouselTitle = carousel.querySelector('[data-display-title]');
-const carouselControls = carousel.querySelector('[data-controls]');
-const carouselDisplayCurrent = carousel.querySelectorAll('[data-display-current]');
-const carouselDisplayTotal = carousel.querySelector('[data-display-total]');
 const carouselTrack = carousel.querySelector('[data-track]');
 const carouselItems = Array.from(carouselTrack.querySelectorAll('[data-id]'));
 
-let isLocked = false;
-let activeItemeId = 1;
+/**
+ * @typedef {object} states
+ * @property {number} count Designates the total states objects count.
+ * @property {0 | 1 | -1} direction Designates the direction of movement of the carousel. 0: idle, 1: moving forwards or -1: moving backwards.
+ * @property {number} length Designates the rendered carousel items count.
+ * @property {(index: number) => any} get Method for getting a corresponding state object based on given index value. (The returned value depends on the direction.)
+ * @property {(cb: (state: { scale: number, opacity: number, translateY: number}, index: number) => void, thisArg: any) => void} forEach Iterates the states objects and calls a callback function passing the corresponsing state object and its index position.
+ */
 
-let states = [
-    // first element in queue state
-    // when running carousel forwards
-    {
-        scale: 1.05,
-        opacity: 1,
-        translateY: -1
-    },
-    // fist element in queue state
-    {
-        scale: 1,
-        opacity: 1,
-        translateY: 0
-    },
-    // second element in queue state
-    {
-        scale: 0.85,
-        opacity: 0.7,
-        translateY: 0.035
-    },
-    // third element in queue state
-    {
-        scale: 0.7,
-        opacity: 0.3,
-        translateY: 0.07
-    },
-    // all other elements in queue states
-    {
-        scale: 0.7,
-        opacity: 0,
-        translateY: 0.07
-    },
-    // last element in queue state
-    // when running carousel backwards
-    {
-        scale: 1.05,
-        opacity: 0,
-        translateY: 1
-    }
-];
+let forEach = (Iterator.prototype.forEach, undefined);
 
-let applyUpdate = function () {
-    let firstElement = carouselItems[0];
-    if (firstElement) {
-        if (firstElement.dataset.id !== activeItemeId) {
-            activeItemeId = firstElement.dataset.id;
-            updatePagination();
-            updateItems();
+/** @type states */
+let states = {
+    count: 5, // state objects count
+    direction: 0, // direction: 0 | 1 | -1
+    length: carouselItems.length, // length: number - carousel items count
+
+    [Symbol.iterator]() {
+        let i = 0;
+        let value;
+        let ctx = this;
+        let res = { done: false };
+
+        return {
+            next(direction) {
+                if (i > ctx.length - 1) {
+                    res = { done: true, index: i, value };
+                    return res;
+                }
+
+                if (i === 0) {
+                    if (direction === 1) {
+                        value = {
+                            scale: 1.05,
+                            opacity: 1,
+                            translateY: -1
+                        };
+                    } else if (direction === -1) {
+                        value = {
+                            scale: 0.85,
+                            opacity: 0.7,
+                            translateY: 0.035
+                        };
+                    } else {
+                        value = {
+                            scale: 1,
+                            opacity: 1,
+                            translateY: 0
+                        };
+                    }
+                }
+
+                if (i === 1) {
+                    if (direction === 1) {
+                        value = {
+                            scale: 1,
+                            opacity: 1,
+                            translateY: 0
+                        };
+                    } else if (direction === -1) {
+                        value = {
+                            scale: 0.7,
+                            opacity: 0.3,
+                            translateY: 0.07
+                        };
+                    } else {
+                        value = {
+                            scale: 0.85,
+                            opacity: 0.7,
+                            translateY: 0.035
+                        };
+                    }
+                }
+
+                if (i === 2) {
+                    if (direction === 1) {
+                        value = {
+                            scale: 0.85,
+                            opacity: 0.7,
+                            translateY: 0.035
+                        };
+                    } else if (direction === -1) {
+                        value = {
+                            scale: 0.7,
+                            opacity: 0,
+                            translateY: 0.07
+                        };
+                    } else {
+                        value = {
+                            scale: 0.7,
+                            opacity: 0.3,
+                            translateY: 0.07
+                        };
+                    }
+                }
+
+                if (i === 3) {
+                    if (direction === 1) {
+                        value = {
+                            scale: 0.7,
+                            opacity: 0.3,
+                            translateY: 0.07
+                        };
+                    } else {
+                        value = {
+                            scale: 0.7,
+                            opacity: 0,
+                            translateY: 0.07
+                        };
+                    }
+                }
+
+                if (i > 3) {
+                    if (direction === -1 && i == ctx.length - 1) {
+                        value = {
+                            scale: 1.05,
+                            opacity: 0,
+                            translateY: 1
+                        };
+                    } else {
+                        value = {
+                            scale: 0.7,
+                            opacity: 0,
+                            translateY: 0.07
+                        };
+                    }
+                }
+
+                res = { done: false, index: i, value };
+                i += 1;
+                return res;
+            },
+            throw(exception) {
+                return { done: true, index: i, exception };
+            },
+            return(value) {
+                return { done: true, index: i, value };
+            }
+        }
+    },
+
+    get(index) {
+        if (this[Symbol.iterator]) {
+            return [...states][index];
+        }
+        return;
+    },
+
+    forEach(cb, thisArg) {
+        if (forEach) {
+            let iter = this[Symbol.iterator]?.();
+            if (iter) forEach.call(iter, cb, thisArg);
+        } else {
+            let iter = this[Symbol.iterator]?.();
+            if (iter) {
+                let res = iter.next(this.direction);
+                while (!res.done) {
+                    if (thisArg) cb.call(thisArg, res.value, i);
+                    else cb(res.value, res.index);
+                    res = iter.next(this.direction);
+                }
+            }
         }
     }
-
-    isLocked = false;
-    carouselTrack.classList.remove('is-dragged');
 };
 
-if (document.readyState === 'complete') {
-    load();
-} else {
-    document.addEventListener('DOMContentLoaded', load);
-}
+let dragMinY = 10,
+    dragMaxY = 90,
+    /** @type {number} */
+    dragStartY,
+    dragProgress = 0,
+    /** @type {0 | 1 | -1} */
+    dragDirection = 1,
+    carouselItemsStyles = [];
 
-
-function load() {
-    document.removeEventListener('DOMContentLoaded', load);
-
-    applyUpdate();
-    setupDrag();
-}
-
-function updateItems() {
-
-    carouselItems.forEach((item, key) => {
-
-        // item.addEventListener('transitionend', (ev) => {
-        //     item.classList.remove('in-transition');
-        //     isLocked = false;
-        // });
-
-        let index = Math.min(key + 1, 4);
-        let state = states[index];
-
-        if (!item.dataset.loadedImage )
-            item.dataset.loadedImage = 'false';
-        
-        // item.classList.add('in-transition');
-        item.style.setProperty('--i', key);
-        item.style.setProperty('opacity', state.opacity);
-        item.style.setProperty('transform', `scale(${state.scale}) translateY(${state.translateY * 100}%)`);
-        
-        if (key < 4) loadImage(item);
-    });
-}
-
-function loadImage(element) {
-    let img = element.querySelector('img');
-    if (!img || !img.dataset.src) return;
-
-    if (!element.dataset.loadedImage || element.dataset.loadedImage == 'false') {
-
-        let loader = element.querySelector('.loader');
-        if (!loader) {
-            loader = document.createElement('div');
-            loader.classList.add('loader');
-            element.appendChild(loader);
-        }
-
-        img.addEventListener('load', (ev) => {
-            element.dataset.loadedImage = 'true';
-            if (ev.target.complete) loader.remove();
-            img.removeAttribute('data-src');
+carouselItems.forEach((item, i) => {
+    let state = states.get(i);
+    if (state) {
+        item.style.setProperty('--i', i);
+        gsap.to(item, {
+            alpha: state.opacity,
+            scale: state.scale,
+            y: state.translateY * item.clientHeight,
+            duration: 0.3
         });
-
-        img.src = img.dataset.src;
     }
-}
+});
 
-function updatePagination() {
-    carouselDisplayCurrent.forEach(el => {
-        el.textContent = activeItemeId;
-    });
-
-    if (carouselDisplayTotal.textContent != carouselItems.length) {
-        carouselDisplayTotal.textContent = carouselItems.length;
-    }
-}
+setupDrag();
 
 function setupDrag() {
-    let minY = 10;
-    let maxY = 90;
-    let startY;
-    let direction = 1;
-    let progress = 0;
-    let minProgress = .75;
-
-    let currentStyles = [];
-
     // Prevent default drag behavior
     carouselTrack.addEventListener('dragstart', () => false);
     carouselTrack.addEventListener('dragover', () => false);
     carouselTrack.addEventListener('dragend', () => false);
 
-    carouselTrack.addEventListener('pointerdown', ondragstart);
+    carouselTrack.addEventListener('pointerdown', onDragStart);
+}
 
-    function ondragstart(ev) {
-        ev.preventDefault();
+function onDragStart(ev) {
+    ev.preventDefault();
 
-        if (isLocked) return;
+    dragStartY = ev.clientY - carouselTrack.clientTop;
+    // carouselItemsStyles = carouselItems.map(getElementStyles);
 
-        carouselTrack.classList.add('is-dragged');
-        startY = ev.clientY - carouselTrack.clientTop;
-        currentStyles = carouselItems.map(getElementStyles);
+    if (ev.pointerId) carouselTrack.setPointerCapture(ev.pointerId);
+    carouselTrack.addEventListener('pointerup', onDragEnd);
+    carouselTrack.addEventListener('pointermove', onDragMove);
+}
 
-        if (ev.pointerId) carouselTrack.setPointerCapture(ev.pointerId);
-        carouselTrack.addEventListener('pointerup', ondragend);
-        carouselTrack.addEventListener('pointermove', ondrag);
+function onDragEnd(ev) {
+    ev.preventDefault();
+
+    if (ev.pointerId) carouselTrack.releasePointerCapture(ev.pointerId);
+    carouselTrack.removeEventListener('pointerup', ondragend);
+    carouselTrack.removeEventListener('pointermove', ondrag);
+
+    dragStartY = ev.clientY - carouselTrack.clientTop;
+}
+
+function onDragMove(ev) {
+    ev.preventDefault();
+
+    let dragDistance = (ev.clientY - carouselTrack.clientTop) - dragStartY;
+
+    if (dragDistance < 0) {
+        dragDirection = 1;
+    } else if (dragDistance > 0) {
+        dragDirection = -1;
+    } else {
+        dragDirection = 0;
     }
+    if (Math.abs(dragDistance) < dragMinY) return;
 
-    function ondragend(ev) {
-        ev.preventDefault();
-
-        if (ev.pointerId) carouselTrack.releasePointerCapture(ev.pointerId);
-        carouselTrack.removeEventListener('pointerup', ondragend);
-        carouselTrack.removeEventListener('pointermove', ondrag);
-
-        startY = ev.clientY - carouselTrack.clientTop;
-
-        if (progress < minProgress) {
-            // reset styles
-            carouselItems.forEach((item, key) => {
-                // item.classList.add('in-transition');
-                
-                // awaitTransitions(item, 'opacity', 'transform')
-                //     .then((element) => {
-                //         console.log(element);
-                //         isLocked = false;
-                //         element.classList.remove('in-transition');
-                //         carouselTrack.classList.remove('is-dragged');
-                //     })
-                //     .catch((error) => {
-                //         console.error(error);
-                //     });
-    
-                item.style.setProperty('opacity', `${currentStyles[key].opacity}`);
-                item.style.setProperty('transform', `scale(${currentStyles[key].scale}) translateY(${currentStyles[key].translateY * 100}%)`);
-            });
-
-            progress = 0;
-            isLocked = false;
-            carouselTrack.classList.remove('is-dragged');
-        } else {
-
-            progress = 0;
-            rotateArrayItems(carouselItems, direction);
-            applyUpdate();
-            carouselTrack.classList.remove('is-dragged');
-        }
-
-        document.body.style.removeProperty('overflow', 'hidden');
-    }
-
-    function ondrag(ev) {
-        ev.preventDefault();
-
-        if (isLocked) return;
-
-        document.body.style.setProperty('overflow', 'hidden');
-
-        let dist = (ev.clientY - carouselTrack.clientTop) - startY;
-        direction = dist < 0 ? 1 : -1;
-
-        if (Math.abs(dist) < minY) return;
-
-        progress = Math.min(Math.abs(dist / maxY), 1);
-        console.log(progress);
-
-        // direction -> forwards
-        if (direction === 1) {
-
-            carouselItems.slice(0, 4).forEach((item, key) => {
-                let targetStyles = states[Math.min(key, 3)];
-    
-                let opacity = interpolate(currentStyles[key].opacity, targetStyles.opacity, Easing.easeInOutQuad(progress));
-                let scale = interpolate(currentStyles[key].scale, targetStyles.scale, Easing.easeInOutQuad(progress));
-                let translateY = interpolate(currentStyles[key].translateY, targetStyles.translateY, Easing.easeInOutQuad(progress));
-    
-                item.style.setProperty('opacity', `${opacity}`);
-                item.style.setProperty('transform', `scale(${scale}) translateY(${translateY * 100}%)`);
-            });
-    
-            if (progress >= minProgress) {
-                isLocked = true;
-                ondragend(ev);
-            }
-
-            return;
-        }
-
-        // direction -> backwards
-        carouselItems.slice(0, -1).forEach((item, key) => {
-            let from = currentStyles[key];
-            let to = states[Math.min(key + 2, 4)];
-
-            let opacity = interpolate(from.opacity, to.opacity, Easing.easeInOutQuad(progress));
-            let scale = interpolate(from.scale, to.scale, Easing.easeInOutQuad(progress));
-            let translateY = interpolate(from.translateY, to.translateY, Easing.easeInOutQuad(progress));
-
-            item.style.setProperty('--i', key + 1);
-            item.style.setProperty('opacity', `${opacity}`);
-            item.style.setProperty('transform', `scale(${scale}) translateY(${translateY * 100}%)`);
-        });
-
-        let lastElement = carouselItems.slice(-1)[0];
-
-        if (lastElement) {
-            loadImage(lastElement);
-            lastElement.style.setProperty('--i', 0);
-
-            let from = states[states.length - 1];
-            let to = states[1];
-
-            let opacity = interpolate(from.opacity, to.opacity, Easing.easeInOutQuad(progress));
-            let scale = interpolate(from.scale, to.scale, Easing.easeInOutQuad(progress));
-            let translateY = interpolate(from.translateY, to.translateY, Easing.easeInOutQuad(progress));
-
-            lastElement.style.setProperty('opacity', `${opacity}`);
-            lastElement.style.setProperty('transform', `scale(${scale}) translateY(${translateY * 100}%)`);
-        }
-
-        if (progress >= minProgress) {
-            isLocked = true;
-            ondragend(ev);
-        }
-    }
+    dragProgress = Math.min(Math.abs(dragDistance / dragMaxY), 1);
+    console.log(dragDistance, dragProgress);
 }
