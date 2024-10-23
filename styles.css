@@ -83,6 +83,13 @@ body:has(.carousel__track:active),
 }
 
 @media screen and (min-width: 761px) {
+
+    /* Scrollable block */
+    .scrollable-block {
+        padding-top: 80px;
+    }
+
+    /* Banners */
     .carousel__title {
         font-size: 4rem;
     }
