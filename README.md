@@ -1,1 +1,1 @@
-# stack-cards-slider
+# Vertical Slider
