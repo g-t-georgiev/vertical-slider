@@ -11,7 +11,7 @@ const carouselItems = Array.from(carouselTrack.querySelectorAll('[data-id]'));
  * @property {0 | 1 | -1} direction Designates the direction of movement of the carousel. 0: idle, 1: moving forwards or -1: moving backwards.
  * @property {number} length Designates the rendered carousel items count.
  * @property {(index: number) => any} get Method for getting a corresponding state object based on given index value. (The returned value depends on the direction.)
- * @property {(cb: (state: { scale: number, opacity: number, translateY: number}, index: number) => void, thisArg: any) => void} forEach Iterates the states objects and calls a callback function passing the corresponsing state object and its index position.
+ * @property {(cb: (state: {scale: number, alpha: number, y: number}, index: number) => void, thisArg: any) => void} forEach Iterates the states objects and calls a callback function passing the corresponsing state object and its index position.
  */
 
 let forEach = (Iterator.prototype.forEach, undefined);
@@ -39,20 +39,20 @@ let states = {
                     if (direction === 1) {
                         value = {
                             scale: 1.05,
-                            opacity: 1,
-                            translateY: -1
+                            alpha: 1,
+                            y: -1
                         };
                     } else if (direction === -1) {
                         value = {
                             scale: 0.85,
-                            opacity: 0.7,
-                            translateY: 0.035
+                            alpha: 0.7,
+                            y: 0.035
                         };
                     } else {
                         value = {
                             scale: 1,
-                            opacity: 1,
-                            translateY: 0
+                            alpha: 1,
+                            y: 0
                         };
                     }
                 }
@@ -61,20 +61,20 @@ let states = {
                     if (direction === 1) {
                         value = {
                             scale: 1,
-                            opacity: 1,
-                            translateY: 0
+                            alpha: 1,
+                            y: 0
                         };
                     } else if (direction === -1) {
                         value = {
                             scale: 0.7,
-                            opacity: 0.3,
-                            translateY: 0.07
+                            alpha: 0.3,
+                            y: 0.07
                         };
                     } else {
                         value = {
                             scale: 0.85,
-                            opacity: 0.7,
-                            translateY: 0.035
+                            alpha: 0.7,
+                            y: 0.035
                         };
                     }
                 }
@@ -83,20 +83,20 @@ let states = {
                     if (direction === 1) {
                         value = {
                             scale: 0.85,
-                            opacity: 0.7,
-                            translateY: 0.035
+                            alpha: 0.7,
+                            y: 0.035
                         };
                     } else if (direction === -1) {
                         value = {
                             scale: 0.7,
-                            opacity: 0,
-                            translateY: 0.07
+                            alpha: 0,
+                            y: 0.07
                         };
                     } else {
                         value = {
                             scale: 0.7,
-                            opacity: 0.3,
-                            translateY: 0.07
+                            alpha: 0.3,
+                            y: 0.07
                         };
                     }
                 }
@@ -105,14 +105,14 @@ let states = {
                     if (direction === 1) {
                         value = {
                             scale: 0.7,
-                            opacity: 0.3,
-                            translateY: 0.07
+                            alpha: 0.3,
+                            y: 0.07
                         };
                     } else {
                         value = {
                             scale: 0.7,
-                            opacity: 0,
-                            translateY: 0.07
+                            alpha: 0,
+                            y: 0.07
                         };
                     }
                 }
@@ -121,14 +121,14 @@ let states = {
                     if (direction === -1 && i == ctx.length - 1) {
                         value = {
                             scale: 1.05,
-                            opacity: 0,
-                            translateY: 1
+                            alpha: 0,
+                            y: 1
                         };
                     } else {
                         value = {
                             scale: 0.7,
-                            opacity: 0,
-                            translateY: 0.07
+                            alpha: 0,
+                            y: 0.07
                         };
                     }
                 }
@@ -185,9 +185,9 @@ carouselItems.forEach((item, i) => {
     if (state) {
         item.style.setProperty('--i', i);
         gsap.to(item, {
-            alpha: state.opacity,
+            alpha: state.alpha,
             scale: state.scale,
-            y: state.translateY * item.clientHeight,
+            y: state.y * item.clientHeight,
             duration: 0.3
         });
     }
